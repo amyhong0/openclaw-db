@@ -45,3 +45,7 @@ AMY_DASHBOARD_PORT=3333 npm start
 |-------|---------------------|
 | 8080  | 대시보드 (기본)     |
 | 18789 | OpenClaw gateway WS |
+
+## GCS 정적 배포 (JSON 수집 방식)
+
+Gateway WebSocket 없이 GCS에 배포하려면 [GCS_DEPLOY.md](./GCS_DEPLOY.md) 참고.

@@ -5,7 +5,9 @@
   "main": "proxy-server.js",
   "scripts": {
     "start": "node proxy-server.js",
-    "dashboard": "node proxy-server.js"
+    "dashboard": "node proxy-server.js",
+    "collect": "node collect-to-gcs.mjs",
+    "collect:gcs": "node collect-to-gcs.mjs"
   },
   "keywords": ["openclaw", "dashboard", "gateway"],
   "license": "MIT",
