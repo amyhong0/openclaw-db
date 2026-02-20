@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMY UNIVERSE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{
+    --bg-0:#0b0e14;--bg-1:#111620;--bg-2:#171d2a;--bg-3:#1e2536;
+    --border:#2a3345;--border-light:#3a4560;
+    --text-0:#f0f3f8;--text-1:#c5ccdb;--text-2:#8892a6;--text-3:#5a6478;
+    --accent:#6c8cff;--accent-dim:rgba(108,140,255,.12);
+    --green:#3dd68c;--green-dim:rgba(61,214,140,.12);
+    --yellow:#f5c542;--yellow-dim:rgba(245,197,66,.12);
+    --red:#f5564a;--red-dim:rgba(245,86,74,.12);
+    --orange:#f5944a;--orange-dim:rgba(245,148,74,.12);
+    --purple:#b07aff;--purple-dim:rgba(176,122,255,.12);
+    --radius:12px;--radius-sm:8px;
+  }
+  body{background:var(--bg-0);color:var(--text-0);font-family:'Inter',-apple-system,sans-serif;min-height:100vh;line-height:1.5;}
+
+  /* TOPBAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;background:var(--bg-1);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+  .topbar-left{display:flex;align-items:center;gap:14px;}
+  .topbar-logo{font-size:18px;font-weight:800;letter-spacing:1.5px;display:flex;align-items:center;gap:10px;}
+  .topbar-logo .ver{color:var(--text-3);font-weight:400;font-size:11px;letter-spacing:0;}
+  .topbar-right{display:flex;align-items:center;gap:16px;}
+  .topbar-time{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-2);}
+  .conn-badge{font-size:12px;color:var(--text-2);display:flex;align-items:center;gap:6px;padding:4px 12px;background:var(--bg-2);border-radius:20px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
+  .conn-badge:hover{border-color:var(--accent);background:var(--bg-3);}
+  .conn-badge.restarting{border-color:var(--yellow);animation:pulse 1s ease-in-out infinite;}
+  .dot{width:8px;height:8px;border-radius:50%;}
+  .dot.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite;}
+  .dot.off{background:var(--red);box-shadow:0 0 8px var(--red);}
+  .dot.connecting{background:var(--yellow);box-shadow:0 0 8px var(--yellow);animation:pulse 1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+  /* SUMMARY */
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:20px 28px;background:var(--bg-1);border-bottom:1px solid var(--border);}
+  .s-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;gap:14px;}
+  .s-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .s-label{font-size:12px;color:var(--text-2);font-weight:500;text-transform:uppercase;letter-spacing:.5px;}
+  .s-value{font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1.2;}
+  .s-sub{font-size:11px;color:var(--text-3);margin-top:2px;}
+  .s-quota{margin-top:6px;}
+  .s-quota-bar{width:100%;height:5px;background:var(--bg-0);border-radius:3px;overflow:hidden;}
+  .s-quota-fill{height:100%;border-radius:3px;transition:width 1.5s ease;}
+  .s-quota-text{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-2);margin-top:3px;display:flex;justify-content:space-between;}
+
+  /* MAIN GRID */
+  .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:calc(100vh - 56px - 100px);}
+  .section{padding:24px 28px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);}
+  .section:nth-child(even){border-right:none;}
+  .section.full{grid-column:1/-1;border-right:none;}
+  .sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .sec-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .sec-badge{font-size:11px;color:var(--text-2);background:var(--bg-3);padding:3px 10px;border-radius:20px;border:1px solid var(--border);font-weight:500;}
+
+  /* ORG CHART */
+  .org{display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:0;}
+  .org-node{background:var(--bg-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;text-align:center;cursor:pointer;transition:all .2s;position:relative;min-width:120px;max-width:160px;}
+  .org-node:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 16px rgba(108,140,255,.15);}
+  .org-node::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;background:var(--c,var(--accent));}
+  .org-node.boss-node{min-width:130px;max-width:160px;padding:8px 14px;}
+  .org-node.pm-node{min-width:130px;max-width:160px;padding:8px 14px;}
+  .org-emoji{font-size:22px;margin-bottom:2px;}
+  .org-name{font-weight:700;font-size:12px;}
+  .org-role{font-size:10px;color:var(--text-2);font-weight:500;}
+  .org-model{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--text-3);margin-top:1px;}
+  .org-node .ind{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;}
+  .vline{width:2px;height:24px;background:var(--border-light);flex-shrink:0;}
+  .org-connector{display:flex;flex-direction:column;align-items:center;width:100%;}
+  .hline-wrap{position:relative;width:100%;display:flex;justify-content:center;}
+  .hline{height:2px;background:var(--border-light);}
+  .org-rows{display:flex;flex-direction:column;align-items:center;gap:0;width:100%;}
+  .team-row{display:flex;justify-content:center;gap:0;flex-wrap:nowrap;}
+  .team-col{display:flex;flex-direction:column;align-items:center;min-width:100px;}
+  .vline-sm{width:2px;height:16px;background:var(--border-light);}
+
+  /* AGENT LIST */
+  .agent-list{display:flex;flex-direction:column;gap:10px;}
+  .a-row{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .2s;}
+  .a-row:hover{border-color:var(--accent);background:var(--bg-3);}
+  .a-ava{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--bg-3);border:1.5px solid var(--border);flex-shrink:0;position:relative;}
+  .a-ava .odot{position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;border:2px solid var(--bg-2);}
+  .a-info{flex:1;min-width:0;}
+  .a-name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;}
+  .a-name span{font-size:11px;color:var(--text-3);font-weight:400;}
+  .a-task{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .a-task-detail{font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;max-width:100%;}
+  .a-task-detail .label{color:var(--text-3);font-weight:500;margin-right:4px;}
+  .a-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+  .tag{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+  .tag.on{background:var(--green-dim);color:var(--green);}
+  .tag.off{background:var(--bg-3);color:var(--text-3);}
+  .tag.no-session{background:var(--bg-3);color:var(--text-3);}
+  .pbar{width:90px;height:4px;background:var(--bg-0);border-radius:2px;overflow:hidden;}
+  .pfill{height:100%;border-radius:2px;transition:width 1.5s ease;}
+  .token-info{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-3);}
+
+  /* API GRID */
+  .api-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;align-items:stretch;}
+  .api-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 10px;text-align:center;transition:border-color .2s,box-shadow .2s;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .api-card:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(108,140,255,.1);}
+  .api-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--c,var(--accent));}
+  .api-card .emoji{font-size:20px;margin-bottom:2px;}
+  .api-card .name{font-weight:700;font-size:12px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .api-card .model{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--text-3);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .api-card .card-body{margin-top:auto;}
+  .ubar{width:100%;height:5px;background:var(--bg-0);border-radius:3px;overflow:hidden;margin:6px 0 3px;}
+  .ufill{height:100%;border-radius:3px;transition:width 2s ease;}
+  .ufill.low{background:linear-gradient(90deg,#2a9d5c,var(--green));}
+  .ufill.mid{background:linear-gradient(90deg,#d4a017,var(--yellow));}
+  .ufill.high{background:linear-gradient(90deg,#d46317,var(--orange));}
+  .ufill.crit{background:linear-gradient(90deg,#c0392b,var(--red));animation:bpulse 1.5s ease-in-out infinite;}
+  @keyframes bpulse{0%,100%{opacity:1;}50%{opacity:.7;}}
+  .upct{font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;text-align:right;}
+  .api-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:3px 0;border-top:1px solid var(--border);}
+  .api-row:first-of-type{border-top:none;}
+  .api-row .l{color:var(--text-2);font-size:10px;}
+  .api-row .v{font-weight:700;font-family:'JetBrains Mono',monospace;font-size:11px;}
+  .api-alert{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;margin-top:4px;}
+
+  /* COST CHART */
+  .cost-chart{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+  .cost-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .cost-title{font-size:13px;font-weight:600;color:var(--text-1);}
+  .chart-area{position:relative;height:180px;overflow:hidden;}
+  .chart-canvas{width:100%;height:100%;}
+  .chart-x{display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-3);padding:4px 40px 0;}
+
+  /* MODAL */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;backdrop-filter:blur(4px);}
+  .modal-bg.show{display:flex;align-items:center;justify-content:center;}
+  .modal{background:var(--bg-1);border:1px solid var(--border);border-radius:16px;width:560px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:modin .25s ease-out;}
+  @keyframes modin{from{opacity:0;transform:scale(.95) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
+  .m-top{padding:24px 28px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:16px;}
+  .m-ava{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:30px;border:2px solid var(--border);background:var(--bg-2);flex-shrink:0;}
+  .m-info{flex:1;}
+  .m-name{font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px;}
+  .m-role{font-size:13px;color:var(--text-2);margin-top:2px;}
+  .m-model{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-3);margin-top:4px;}
+  .m-close{background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;}
+  .m-close:hover{background:var(--red-dim);color:var(--red);}
+  .m-body{padding:20px 28px 24px;}
+  .m-sec{margin-bottom:20px;}
+  .m-sec-t{font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .chip-grid{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{font-size:11px;padding:4px 10px;border-radius:6px;font-weight:500;border:1px solid;}
+  .chip.ok{background:var(--green-dim);color:var(--green);border-color:rgba(61,214,140,.25);}
+  .chip.no{background:var(--red-dim);color:var(--red);border-color:rgba(245,86,74,.25);text-decoration:line-through;opacity:.7;}
+  .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .mini{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;}
+  .mini .l{font-size:11px;color:var(--text-2);margin-bottom:4px;}
+  .mini .v{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;}
+
+  /* RESPONSIVE */
+  @media(max-width:1400px){.api-grid{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:900px){.main-grid{grid-template-columns:1fr;}.section{border-right:none;}.summary{grid-template-columns:repeat(2,1fr);}.api-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:600px){.summary{grid-template-columns:1fr;}.team-row{flex-wrap:wrap;justify-content:center;}.api-grid{grid-template-columns:repeat(2,1fr);}}
+
+  /* CHAT LOG */
+  .chat-tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:12px;flex-shrink:0;}
+  .chat-tab{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid var(--border);background:var(--bg-2);color:var(--text-2);transition:all .15s;user-select:none;pointer-events:auto;position:relative;z-index:2;}
+  .chat-tab:hover{border-color:var(--accent);color:var(--text-1);}
+  .chat-tab.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+  .chat-tab .tab-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;pointer-events:none;}
+  .chat-msgs{max-height:calc(100vh - 400px);min-height:200px;overflow-y:scroll;display:flex;flex-direction:column;gap:6px;padding:4px 0;}
+  .chat-msg{display:flex;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-2);border:1px solid var(--border);position:relative;}
+  .chat-msg.user{border-left:3px solid var(--accent);}
+  .chat-msg.assistant{border-left:3px solid var(--green);}
+  .chat-msg.spawn{border-left:3px solid var(--orange);background:var(--orange-dim);}
+  .chat-msg .cm-ava{flex-shrink:0;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;background:var(--bg-3);}
+  .chat-msg .cm-body{flex:1;min-width:0;}
+  .chat-msg .cm-head{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+  .chat-msg .cm-role{font-size:10px;font-weight:700;letter-spacing:.5px;}
+  .chat-msg .cm-agent-tag{font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;}
+  .chat-msg .cm-text{font-size:12px;color:var(--text-1);line-height:1.5;white-space:pre-wrap;word-break:break-word;}
+  .chat-msg .cm-time{font-size:10px;color:var(--text-3);font-family:'JetBrains Mono',monospace;flex-shrink:0;align-self:flex-start;margin-top:2px;}
+  .chat-empty{text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px;}
+  .chat-divider{display:flex;align-items:center;gap:10px;padding:4px 0;color:var(--text-3);font-size:10px;font-weight:600;}
+  .chat-divider::before,.chat-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  .chat-arrow{font-size:11px;color:var(--orange);font-weight:700;margin:0 2px;}
+
+  /* Empty state */
+  .empty{text-align:center;padding:40px 20px;color:var(--text-3);}
+  .empty .icon{font-size:48px;margin-bottom:12px;opacity:.5;}
+  .empty .msg{font-size:14px;}
+
+  ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">🐱 AMY UNIVERSE <span class="ver" id="gwVersion"></span></div>
+  </div>
+  <div class="topbar-right">
+    <div class="conn-badge" id="connBadge" onclick="onConnBadgeClick()" title="클릭하여 Gateway 재시작">
+      <div class="dot" id="connDot"></div>
+      <span id="connLabel">연결 중...</span>
+    </div>
+    <div class="topbar-time" id="clock"></div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="s-card">
+    <div class="s-icon" style="background:var(--accent-dim);">🤖</div>
+    <div>
+      <div class="s-label">에이전트</div>
+      <div class="s-value" id="sAgentCount">-</div>
+      <div class="s-sub" id="sAgentSub">로딩 중...</div>
+    </div>
+  </div>
+  <div class="s-card">
+    <div class="s-icon" style="background:var(--green-dim);">💬</div>
+    <div>
+      <div class="s-label">활성 세션</div>
+      <div class="s-value" id="sSessionCount">-</div>
+      <div class="s-sub" id="sSessionSub">-</div>
+    </div>
+  </div>
+  <div class="s-card">
+    <div class="s-icon" style="background:var(--yellow-dim);">🪙</div>
+    <div style="flex:1;">
+      <div class="s-label">Claude 토큰 <span style="font-size:10px;color:var(--text-3);text-transform:none;letter-spacing:0;font-weight:400;">· Max 20x</span></div>
+      <div class="s-value" id="sTokens">-</div>
+      <div class="s-sub" id="sTokenCost">-</div>
+      <div class="s-quota" id="sQuota">
+        <div class="s-quota-bar"><div class="s-quota-fill" id="sQuotaFill" style="width:0%;background:var(--green);"></div></div>
+        <div class="s-quota-text"><span id="sQuotaUsed">-</span><span id="sQuotaLimit">-</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="s-card">
+    <div class="s-icon" style="background:var(--purple-dim);">📡</div>
+    <div>
+      <div class="s-label">채널 상태</div>
+      <div class="s-value" id="sChannel">-</div>
+      <div class="s-sub" id="sChannelSub">-</div>
+    </div>
+  </div>
+</div>
+
+<div class="main-grid">
+  <div class="section">
+    <div class="sec-header">
+      <div class="sec-title">🏛️ 조직도</div>
+      <div class="sec-badge">고양이 마을 개발팀</div>
+    </div>
+    <div class="org" id="orgChart"><div class="empty"><div class="icon">⏳</div><div class="msg">Gateway 연결 대기 중...</div></div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header">
+      <div class="sec-title">📊 API 사용량 및 비용</div>
+      <div class="sec-badge" id="costPeriod">최근 30일</div>
+    </div>
+    <div class="api-grid" id="apiGrid"></div>
+    <div class="cost-chart">
+      <div class="cost-header">
+        <div class="cost-title">📅 일별 토큰 사용량 및 비용</div>
+      </div>
+      <div class="chart-area"><canvas class="chart-canvas" id="chartCanvas"></canvas></div>
+      <div class="chart-x" id="chartX"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header">
+      <div class="sec-title">📡 에이전트 현황</div>
+      <div class="sec-badge" id="liveLabel">실시간</div>
+    </div>
+    <div class="agent-list" id="agentList"><div class="empty"><div class="icon">⏳</div><div class="msg">데이터 로딩 중...</div></div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-header">
+      <div class="sec-title">💬 에이전트 채팅 로그</div>
+      <div class="sec-badge" id="chatBadge">대화 내역</div>
+    </div>
+    <div class="chat-tabs" id="chatTabs"></div>
+    <div class="chat-msgs" id="chatMsgs"><div class="chat-empty">탭을 선택하면 대화 내역이 표시됩니다</div></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+  <div class="modal" id="modalEl" onclick="event.stopPropagation()"></div>
+</div>
+
+<script>
+// ===== CONFIG =====
+const GW_HOST = location.hostname || 'localhost';
+const GW_PORT = location.port || 8080;
+// ~/.openclaw/openclaw.json 의 gateway.auth.token 값으로 교체
+const GW_TOKEN = 'REPLACE_WITH_YOUR_GATEWAY_TOKEN';
+
+// Agent metadata (from openclaw.json + IDENTITY.md)
+const META = {
+  main:      { name:'모찌', emoji:'🐱', role:'PM / 총괄 마을 촌장냥', model:'Claude Opus 4.6', modelId:'anthropic/claude-opus-4-6', color:'#ff8844', origin:'고양이 마을 시청', deny:[] },
+  secretary: { name:'루나', emoji:'🌙', role:'비서 / 달빛 비서냥', model:'GPT-5.2', modelId:'openai/gpt-5.2', color:'#c4a6ff', origin:'고양이 마을 시청 옆방', deny:['browser','canvas'] },
+  pm:        { name:'모찌(PM)', emoji:'🐱', role:'PM(서브) / 촌장 분신냥', model:'Claude Opus 4.6', modelId:'anthropic/claude-opus-4-6', color:'#ff8844', origin:'고양이 마을 시청', deny:['exec','process','write','edit','apply_patch','browser','canvas'] },
+  backend:   { name:'까미', emoji:'🐈‍⬛', role:'Backend / 지하 대장장이냥', model:'Claude Sonnet 4.6', modelId:'anthropic/claude-sonnet-4-6', color:'#4488ff', origin:'골목길 지하 작업실', deny:['browser','canvas'] },
+  frontend:  { name:'솜이', emoji:'🐱', role:'Frontend / 꽃가게 디자이너냥', model:'Claude Sonnet 4.6', modelId:'anthropic/claude-sonnet-4-6', color:'#ff44aa', origin:'언덕 위 꽃가게', deny:['browser','canvas'] },
+  devops:    { name:'호랑이', emoji:'🐯', role:'DevOps / 강가 목수냥', model:'Gemini 2.5 Flash', modelId:'google/gemini-2.5-flash', color:'#44ffaa', origin:'강가 목공소', deny:['browser','canvas'] },
+  qa:        { name:'나비', emoji:'🐈', role:'QA / 지붕 위 탐정냥', model:'Gemini 2.5 Flash', modelId:'google/gemini-2.5-flash', color:'#f5c542', origin:'지붕 위 망루', deny:['write','edit','apply_patch','browser','canvas'] },
+  reviewer:  { name:'달이', emoji:'😺', role:'Code Reviewer / 도서관 사서냥', model:'Claude Opus 4.6', modelId:'anthropic/claude-opus-4-6', color:'#b07aff', origin:'마을 도서관 창가', deny:['write','edit','apply_patch','exec','process','browser','canvas'] },
+  debugger:  { name:'두부', emoji:'🐾', role:'Debugger / 마을 수의사냥', model:'Claude Opus 4.6', modelId:'anthropic/claude-opus-4-6', color:'#ff6b6b', origin:'마을 진료소', deny:['browser','canvas'] },
+  designer:  { name:'구름', emoji:'🎨', role:'UI/UX Designer / 마을 화가냥', model:'Claude Sonnet 4.6', modelId:'anthropic/claude-sonnet-4-6', color:'#45b7d1', origin:'광장 아틀리에', deny:['exec','process'] }
+};
+
+const ALL_TOOLS = ['read','write','edit','apply_patch','exec','process','browser','canvas','sessions'];
+
+// Max 구독제 한도 (5시간 롤링 윈도우 기준)
+// Max 5x ($100/mo): ~88K tokens/5h window
+// Max 20x ($200/mo): ~220K tokens/5h window
+// 일일 한도 추정: 5h window * ~4.8 = ~1.06M (Max 20x 기준)
+const MAX_PLAN = {
+  name: 'Max 20x',
+  price: '$200/mo',
+  windowTokens: 220000,       // 5시간 윈도우당
+  windowHours: 5,
+  dailyEstimate: 1056000,     // 일일 추정 (220K * 4.8)
+  monthlyEstimate: 31680000,  // 월간 추정 (일일 * 30)
+};
+
+// ===== STATE =====
+let ws = null;
+let connected = false;
+let reqId = 0;
+let pending = {};
+let gwData = { health: null, status: null, presence: [], usage: null, cost: null, agents: null, sessions: null };
+let taskMap = {}; // agentId -> { task: string, lastMsg: string, status: string }
+let chatHistory = {}; // agentId -> [{ role, content, timestamp }]
+let activeChatAgent = '_all';
+
+// ===== WS CONNECTION =====
+function connect() {
+  setConn('connecting');
+  ws = new WebSocket(`ws://${GW_HOST}:${GW_PORT}`);
+
+  ws.onopen = () => { console.log('[AMY] WebSocket opened'); };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'event') {
+      if (msg.event === 'connect.challenge') {
+        sendConnect();
+      } else if (msg.event === 'health') {
+        fetchAll();
+      } else if (msg.event === 'agent') {
+        // agent session started/ended - refresh
+        fetchAll();
+      }
+      return;
+    }
+    if (msg.type === 'res') {
+      const cb = pending[msg.id];
+      if (cb) { delete pending[msg.id]; cb(msg); }
+
+      // After hello-ok, do initial fetch
+      if (msg.id === 'connect') {
+        console.log('[AMY] Connect response:', msg.ok, msg.error ? JSON.stringify(msg.error) : 'success');
+      }
+      if (msg.id === 'connect' && msg.ok) {
+        connected = true;
+        setConn('on');
+        const p = msg.payload;
+        document.getElementById('gwVersion').textContent = `Gateway ${p.server?.host || ''} · ${p.server?.version || 'dev'}`;
+        fetchAll();
+      }
+    }
+  };
+
+  ws.onclose = (ev) => { connected = false; setConn('off'); console.log('[AMY] WebSocket closed:', ev.code, ev.reason); setTimeout(connect, 3000); };
+  ws.onerror = (err) => { console.error('[AMY] WebSocket error:', err); };
+}
+
+function sendConnect() {
+  const frame = {
+    type:'req', id:'connect', method:'connect',
+    params: {
+      minProtocol:3, maxProtocol:3,
+      client:{ id:'openclaw-control-ui', version:'dev', platform:'web', mode:'webchat', instanceId: 'amy-dashboard-' + Date.now() },
+      role:'operator', scopes:['operator.admin','operator.read','operator.approvals','operator.pairing'],
+      caps: [],
+      auth:{ token: GW_TOKEN },
+      userAgent: navigator.userAgent,
+      locale: navigator.language
+    }
+  };
+  ws.send(JSON.stringify(frame));
+}
+
+function rpc(method, params = {}) {
+  return new Promise((resolve) => {
+    reqId++;
+    const id = String(reqId);
+    pending[id] = (msg) => resolve(msg.ok ? msg.payload : null);
+    ws.send(JSON.stringify({ type:'req', id, method, params }));
+  });
+}
+
+async function fetchAll() {
+  if (!connected) return;
+  const [health, status, presence, usage, cost, sessions] = await Promise.all([
+    rpc('health'), rpc('status'), rpc('system-presence'),
+    rpc('usage.status'), rpc('usage.cost'), rpc('sessions.list')
+  ]);
+  gwData.health = health;
+  gwData.status = status;
+  gwData.presence = presence;
+  gwData.usage = usage;
+  gwData.cost = cost;
+  gwData.sessions = sessions;
+  render();
+  fetchTasks();
+}
+
+async function fetchTasks() {
+  const byAgent = gwData.status?.sessions?.byAgent || [];
+  const promises = byAgent.filter(a => a.recent?.length > 0).map(async (a) => {
+    const agentId = a.agentId;
+    let allSessionMsgs = [];
+    // 모든 최근 세션에서 대화 가져오기 (최대 3개 세션)
+    for (const sess of a.recent.slice(0, 3)) {
+      const sessionKey = sess.key;
+      try {
+        const hist = await rpc('chat.history', { sessionKey, limit: 50 }).catch(() => null);
+        if (!hist?.messages?.length) continue;
+        const msgs = hist.messages;
+        // taskMap은 가장 최근 세션 기준
+        if (allSessionMsgs.length === 0) {
+          const firstUser = msgs.find(m => m.role === 'user');
+          const taskText = extractText(firstUser);
+          const lastAssistant = [...msgs].reverse().find(m => m.role === 'assistant');
+          const lastMsg = extractText(lastAssistant);
+          const lastRole = msgs[msgs.length - 1]?.role;
+          const status = lastRole === 'assistant' ? 'responded' : 'waiting';
+          taskMap[agentId] = { task: truncate(taskText, 80), lastMsg: truncate(lastMsg, 120), status, sessionKey };
+        }
+        // 모든 세션 메시지를 합침
+        allSessionMsgs = allSessionMsgs.concat(msgs.map(m => ({
+          role: m.role,
+          content: extractText(m),
+          timestamp: m.timestamp || null
+        })).filter(m => m.content));
+      } catch(e) { continue; }
+    }
+    if (allSessionMsgs.length > 0) {
+      chatHistory[agentId] = allSessionMsgs;
+    }
+  });
+  await Promise.all(promises);
+  if (rendered) {
+    patchAgentList();
+    renderChatTabs();
+    if (activeChatAgent === '_all') {
+      renderAllChat();
+    } else if (activeChatAgent) {
+      renderChatMessages(activeChatAgent);
+    }
+  }
+}
+
+// ===== REAL-TIME CHAT EVENT HANDLER =====
+function handleChatEvent(payload) {
+  if (!payload) return;
+  const sessionKey = payload.sessionKey || '';
+  // Extract agentId from sessionKey (format: "agent:<agentId>:<label>" or "spawn:<agentId>:...")
+  const parts = sessionKey.split(':');
+  let agentId = parts.length >= 2 ? parts[1] : '';
+  if (!agentId) return;
+
+  const m = getMeta(agentId);
+  if (!m || m.name === agentId && !META[agentId]) return; // unknown agent
+
+  // Handle different chat event kinds
+  const kind = payload.kind;
+
+  if (kind === 'chunk' || kind === 'text') {
+    // Streaming text - accumulate into last assistant message
+    const text = payload.text || payload.content || '';
+    if (!text) return;
+    if (!chatHistory[agentId]) chatHistory[agentId] = [];
+    const msgs = chatHistory[agentId];
+    const last = msgs[msgs.length - 1];
+    if (last && last.role === 'assistant' && last._streaming) {
+      last.content += text;
+    } else {
+      msgs.push({ role: 'assistant', content: text, timestamp: Date.now(), _streaming: true });
+    }
+    refreshChatUI(agentId);
+    return;
+  }
+
+  if (kind === 'final' || kind === 'message') {
+    // Complete message
+    const role = payload.role || 'assistant';
+    let text = '';
+    if (typeof payload.content === 'string') {
+      text = payload.content;
+    } else if (Array.isArray(payload.content)) {
+      const tp = payload.content.find(c => c.type === 'text');
+      text = tp?.text || '';
+    } else if (payload.text) {
+      text = payload.text;
+    }
+    if (!text) return;
+
+    if (!chatHistory[agentId]) chatHistory[agentId] = [];
+    const msgs = chatHistory[agentId];
+    // Replace streaming message if exists
+    const last = msgs[msgs.length - 1];
+    if (last && last._streaming && last.role === role) {
+      last.content = text;
+      delete last._streaming;
+    } else {
+      // 중복 방지: 같은 role + 같은 내용의 메시지가 마지막에 이미 있으면 스킵
+      const textTrim = text.slice(0, 200);
+      if (last && last.role === role && last.content.slice(0, 200) === textTrim) return;
+      msgs.push({ role, content: text, timestamp: Date.now() });
+    }
+
+    // Update taskMap
+    if (role === 'user') {
+      if (!taskMap[agentId]) taskMap[agentId] = {};
+      taskMap[agentId].task = truncate(text, 80);
+    } else if (role === 'assistant') {
+      if (!taskMap[agentId]) taskMap[agentId] = {};
+      taskMap[agentId].lastMsg = truncate(text, 120);
+      taskMap[agentId].status = 'responded';
+    }
+
+    if (rendered) patchAgentList();
+    refreshChatUI(agentId);
+    return;
+  }
+
+  if (kind === 'start') {
+    // Session started - a user message was sent
+    const text = payload.message || payload.text || '';
+    if (!text) return;
+    if (!chatHistory[agentId]) chatHistory[agentId] = [];
+    var existMsgs = chatHistory[agentId];
+    var lastExist = existMsgs[existMsgs.length - 1];
+    if (!(lastExist && lastExist.role === 'user' && lastExist.content.slice(0, 200) === text.slice(0, 200))) {
+      existMsgs.push({ role: 'user', content: text, timestamp: Date.now() });
+    }
+    if (!taskMap[agentId]) taskMap[agentId] = {};
+    taskMap[agentId].task = truncate(text, 80);
+    taskMap[agentId].status = 'waiting';
+    if (rendered) patchAgentList();
+    refreshChatUI(agentId);
+    return;
+  }
+
+  // Generic fallback: try to extract something useful
+  if (payload.messages && Array.isArray(payload.messages)) {
+    if (!chatHistory[agentId]) chatHistory[agentId] = [];
+    payload.messages.forEach(msg => {
+      const text = extractText(msg);
+      if (text) {
+        chatHistory[agentId].push({ role: msg.role, content: text, timestamp: Date.now() });
+      }
+    });
+    refreshChatUI(agentId);
+  }
+}
+
+function refreshChatUI(agentId) {
+  if (!rendered) return;
+  renderChatTabs();
+  if (activeChatAgent === '_all') {
+    renderAllChat();
+  } else if (activeChatAgent === agentId) {
+    renderChatMessages(agentId);
+  }
+}
+
+function extractText(msg) {
+  if (!msg) return '';
+  const content = msg.content;
+  let text = '';
+  if (typeof content === 'string') { text = content; }
+  else if (Array.isArray(content)) {
+    text = content.filter(c => c.type === 'text').map(c => c.text).join('\n');
+  }
+  // 디스코드 메타데이터 제거
+  text = text.replace(/^System:.*?\n\n/s, '');
+  text = text.replace(/Conversation info \(untrusted metadata\):\n```json\n[\s\S]*?```\n*/g, '');
+  return text.trim();
+}
+
+function truncate(str, max) {
+  if (!str) return '';
+  const clean = str.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+  return clean.length > max ? clean.slice(0, max) + '…' : clean;
+}
+
+// ===== RENDER =====
+let rendered = false;
+
+function render() {
+  renderSummary();
+  if (!rendered) {
+    renderOrg();
+    renderAgentList();
+    renderApiSection();
+    renderChatTabs();
+    renderAllChat();
+    rendered = true;
+  } else {
+    patchOrg();
+    patchAgentList();
+    patchApiSection();
+  }
+  renderChart();
+}
+
+function renderSummary() {
+  const s = gwData.status;
+  const h = gwData.health;
+  const c = gwData.cost;
+  const sess = gwData.sessions;
+
+  // Agents
+  const agentIds = s?.heartbeat?.agents || [];
+  const catAgents = agentIds;
+  const hbEnabled = catAgents.filter(a => a.enabled).length;
+  document.getElementById('sAgentCount').textContent = catAgents.length;
+  document.getElementById('sAgentSub').textContent = `하트비트 활성 ${hbEnabled} · 비활성 ${catAgents.length - hbEnabled}`;
+
+  // Sessions
+  const sessionCount = sess?.count || 0;
+  const totalSessions = (s?.sessions?.byAgent || []).reduce((sum, a) => sum + (a.count || 0), 0);
+  document.getElementById('sSessionCount').textContent = totalSessions;
+  const recentSession = sess?.sessions?.[0];
+  document.getElementById('sSessionSub').textContent = recentSession
+    ? `최근: ${recentSession.displayName || recentSession.key}`
+    : '세션 없음';
+
+  // Tokens / Cost (Claude 모델 세션만 카운트)
+  // usage.cost API는 프로바이더 구분이 없으므로, status.sessions.byAgent에서 Claude 세션만 합산
+  const byAgent = s?.sessions?.byAgent || [];
+  let claudeTokens = 0;
+  let totalAllTokens = 0;
+  byAgent.forEach(function(a) {
+    (a.recent || []).forEach(function(r) {
+      const model = (r.model || '').toLowerCase();
+      const tokens = r.totalTokens || 0;
+      totalAllTokens += tokens;
+      if (model.includes('claude') || model.includes('opus') || model.includes('sonnet') || model.includes('haiku')) {
+        claudeTokens += tokens;
+      }
+    });
+  });
+
+  // 비용은 usage.cost totals에서 Claude 비율로 추정
+  const totals = c?.totals;
+  const claudeRatio = totalAllTokens > 0 ? claudeTokens / totalAllTokens : 1;
+  const claudeCost = totals ? totals.totalCost * claudeRatio : 0;
+
+  const usedTokens = claudeTokens;
+  const monthlyLimit = MAX_PLAN.monthlyEstimate;
+  const quotaPct = Math.min((usedTokens / monthlyLimit) * 100, 100);
+  const quotaColor = quotaPct >= 90 ? 'var(--red)' : quotaPct >= 70 ? 'var(--orange)' : quotaPct >= 40 ? 'var(--yellow)' : 'var(--green)';
+
+  document.getElementById('sTokens').textContent = fmtTokens(usedTokens) + ' / ' + fmtTokens(monthlyLimit);
+  document.getElementById('sTokenCost').textContent = usedTokens > 0
+    ? `~$${claudeCost.toFixed(2)} · Claude only (${c?.days || 30}일간)`
+    : '데이터 없음';
+
+  // Quota bar
+  const qFill = document.getElementById('sQuotaFill');
+  const qUsed = document.getElementById('sQuotaUsed');
+  const qLimit = document.getElementById('sQuotaLimit');
+  if (qFill) { qFill.style.width = quotaPct.toFixed(1) + '%'; qFill.style.background = quotaColor; }
+  if (qUsed) qUsed.textContent = quotaPct.toFixed(1) + '% 사용';
+  if (qLimit) qLimit.textContent = MAX_PLAN.name + ' (' + MAX_PLAN.price + ')';
+
+  // Channel
+  const discord = h?.channels?.discord;
+  if (discord) {
+    const probe = discord.probe;
+    document.getElementById('sChannel').textContent = probe?.ok ? 'Discord ✓' : 'Discord ✗';
+    document.getElementById('sChannel').style.color = probe?.ok ? 'var(--green)' : 'var(--red)';
+    document.getElementById('sChannelSub').textContent = probe?.bot ? `@${probe.bot.username}` : (discord.running ? '실행 중' : '대기 중');
+  }
+}
+
+function renderOrg() {
+  const chart = document.getElementById('orgChart');
+  const fixedOrder = ['main','secretary','backend','frontend','devops','qa','reviewer','debugger','designer'];
+  const hbIds = new Set((gwData.status?.heartbeat?.agents || []).map(a => a.agentId));
+  // main은 항상 표시
+  const agentIds = fixedOrder.filter(id => id === 'main' || hbIds.has(id));
+  if (agentIds.length === 0) { chart.innerHTML = '<div class="empty"><div class="icon">📭</div><div class="msg">등록된 에이전트가 없습니다</div></div>'; return; }
+
+  const sessionMap = buildSessionMap();
+
+  // 비서와 개발팀 분리
+  const hasSecretary = agentIds.includes('secretary');
+  const devTeam = agentIds.filter(id => id !== 'main' && id !== 'secretary');
+  const row1 = devTeam.slice(0, 4);
+  const row2 = devTeam.slice(4);
+
+  function renderNode(id, extraClass) {
+    const m = getMeta(id);
+    const on = !!sessionMap[id];
+    return `<div class="team-col">
+      <div class="vline-sm"></div>
+      <div class="org-node ${extraClass||''}" data-org="${id}" style="--c:${m.color}" onclick="openModal('${id}')">
+        <div class="ind" data-org-ind="${id}" style="background:${on ? 'var(--green)' : 'var(--text-3)'};box-shadow:0 0 6px ${on ? 'var(--green)' : 'transparent'};"></div>
+        <div class="org-emoji">${m.emoji}</div>
+        <div class="org-name">${m.name}</div>
+        <div class="org-role">${m.role.split('/')[0].trim()}</div>
+        <div class="org-model">${m.model}</div>
+      </div>
+    </div>`;
+  }
+
+  function renderTopNode(id, extraClass) {
+    const m = getMeta(id);
+    const on = !!sessionMap[id];
+    return `<div class="org-node ${extraClass||''}" data-org="${id}" style="--c:${m.color}" onclick="openModal('${id}')">
+      <div class="ind" data-org-ind="${id}" style="background:${on ? 'var(--green)' : 'var(--text-3)'};box-shadow:0 0 6px ${on ? 'var(--green)' : 'transparent'};"></div>
+      <div class="org-emoji">${m.emoji}</div>
+      <div class="org-name">${m.name}</div>
+      <div class="org-role">${m.role}</div>
+      <div class="org-model">${m.model}</div>
+    </div>`;
+  }
+
+  // 모찌(main) + 루나(secretary) → 개발팀
+  const maxRow = Math.max(row1.length, row2.length);
+  const hlineWidth = Math.max(maxRow * 110, 200);
+
+  chart.innerHTML = `
+    <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+      ${renderTopNode('main', 'boss-node')}
+      ${hasSecretary ? `<div style="position:absolute;left:calc(50% + 100px);top:0;">${renderTopNode('secretary', '')}</div>` : ''}
+    </div>
+    ${devTeam.length > 0 ? `
+      <div class="vline"></div>
+      <div class="hline" style="width:${hlineWidth}px;max-width:95%;"></div>
+      <div class="org-rows">
+        <div class="team-row">${row1.map(id => renderNode(id)).join('')}</div>
+        ${row2.length ? `
+          <div style="display:flex;justify-content:center;"><div class="vline"></div></div>
+          <div class="hline" style="width:${Math.max(row2.length * 110, 200)}px;max-width:95%;"></div>
+          <div class="team-row">${row2.map(id => renderNode(id)).join('')}</div>
+        ` : ''}
+      </div>
+    ` : ''}
+  `;
+}
+
+function renderAgentList() {
+  const list = document.getElementById('agentList');
+  const byAgent = gwData.status?.sessions?.byAgent || [];
+  const fixedOrder = ['main','secretary','backend','frontend','devops','qa','reviewer','debugger','designer'];
+  const hbIds = new Set((gwData.status?.heartbeat?.agents || []).map(a => a.agentId));
+  const agentIds = fixedOrder.filter(id => hbIds.has(id));
+  const sessionMap = buildSessionMap();
+
+  if (agentIds.length === 0) { list.innerHTML = '<div class="empty"><div class="icon">📭</div><div class="msg">에이전트 없음</div></div>'; return; }
+
+  list.innerHTML = agentIds.map(id => {
+    const m = getMeta(id);
+    const sess = sessionMap[id];
+    const hasSession = !!sess;
+    const hbAgent = (gwData.status?.heartbeat?.agents || []).find(a => a.agentId === id);
+    const hbEnabled = hbAgent?.enabled;
+
+    let statusLabel, statusClass;
+    if (hasSession) {
+      statusLabel = '세션 활성';
+      statusClass = 'on';
+    } else {
+      statusLabel = '세션 없음';
+      statusClass = 'no-session';
+    }
+
+    let taskText = '대기 중';
+    let taskDetail = '';
+    let tokenInfo = '';
+    let progressHtml = '';
+
+    // taskMap에서 실제 태스크 내용 가져오기
+    const tm = taskMap[id];
+    if (tm && tm.task) {
+      taskText = tm.task;
+      if (tm.lastMsg) {
+        taskDetail = tm.lastMsg;
+      }
+    } else if (sess) {
+      taskText = sess.displayName || '세션 활성';
+    }
+
+    if (sess) {
+      const pct = sess.percentUsed || 0;
+      const total = sess.totalTokens || 0;
+      tokenInfo = `${fmtTokens(total)} tokens · ${pct}% 컨텍스트`;
+      progressHtml = `<div class="pbar"><div class="pfill" style="width:${pct}%;background:${pct > 70 ? 'var(--red)' : pct > 40 ? 'var(--yellow)' : 'var(--green)'};"></div></div>`;
+    }
+
+    return `
+      <div class="a-row" data-agent="${id}" onclick="openModal('${id}')">
+        <div class="a-ava" style="border-color:${m.color}20;">
+          ${m.emoji}
+          <div class="odot" data-agent-dot="${id}" style="background:${hasSession ? 'var(--green)' : 'var(--text-3)'};box-shadow:0 0 5px ${hasSession ? 'var(--green)' : 'transparent'};"></div>
+        </div>
+        <div class="a-info">
+          <div class="a-name">${m.name} <span>${m.role.split('/')[0].trim()}</span></div>
+          <div class="a-task" data-agent-task="${id}">${hasSession ? '📋' : '💤'} ${taskText}</div>
+          ${taskDetail ? `<div class="a-task-detail" data-agent-detail="${id}"><span class="label">↳ 응답:</span>${taskDetail}</div>` : `<div class="a-task-detail" data-agent-detail="${id}"></div>`}
+          <div class="token-info" data-agent-token="${id}">${tokenInfo}</div>
+        </div>
+        <div class="a-right">
+          <div class="tag ${statusClass}" data-agent-tag="${id}">${statusLabel}</div>
+          <div data-agent-pbar="${id}">${progressHtml}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderApiSection() {
+  const grid = document.getElementById('apiGrid');
+  const cost = gwData.cost;
+  const usage = gwData.usage;
+
+  const byAgent = gwData.status?.sessions?.byAgent || [];
+  // 고정 순서: pm → backend → frontend → devops → qa → reviewer
+  const fixedOrder = ['main','secretary','backend','frontend','devops','qa','reviewer','debugger','designer'];
+
+  if (!cost && !usage && byAgent.length === 0) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1;"><div class="icon">📭</div><div class="msg">API 사용 데이터가 없습니다</div></div>'; return; }
+
+  function buildAgentCard(id) {
+    const m = getMeta(id);
+    const agentSessions = byAgent.find(a => a.agentId === id);
+    const recent = agentSessions?.recent || [];
+    const totalTokens = recent.reduce((s, r) => s + (r.totalTokens || 0), 0);
+    const inputTokens = recent.reduce((s, r) => s + (r.inputTokens || 0), 0);
+    const outputTokens = recent.reduce((s, r) => s + (r.outputTokens || 0), 0);
+    const contextTokens = recent[0]?.contextTokens || 0;
+    const pct = contextTokens > 0 ? (totalTokens / contextTokens * 100) : 0;
+    const cls = pct >= 90 ? 'crit' : pct >= 70 ? 'high' : pct >= 40 ? 'mid' : 'low';
+
+    return `<div class="api-card" data-api="${id}" style="--c:${m.color};">
+      <div class="emoji">${m.emoji}</div>
+      <div class="name">${m.name}</div>
+      <div class="model">${m.model}</div>
+      <div class="ubar"><div class="ufill ${cls}" data-api-bar="${id}" style="width:${Math.min(pct, 100)}%;"></div></div>
+      <div class="upct" data-api-pct="${id}" style="color:${pct >= 70 ? 'var(--orange)' : 'var(--text-2)'};">${pct.toFixed(1)}% 컨텍스트</div>
+      <div class="card-body">
+        <div class="api-row"><span class="l">세션 수</span><span class="v" data-api-sess="${id}">${recent.length}</span></div>
+        <div class="api-row"><span class="l">입력 토큰</span><span class="v" data-api-in="${id}">${fmtTokens(inputTokens)}</span></div>
+        <div class="api-row"><span class="l">출력 토큰</span><span class="v" data-api-out="${id}">${fmtTokens(outputTokens)}</span></div>
+        <div class="api-row"><span class="l">총 토큰</span><span class="v" data-api-total="${id}">${fmtTokens(totalTokens)}</span></div>
+      </div>
+    </div>`;
+  }
+
+  // Row 1: 에이전트 6개 (고정 순서, 항상 표시)
+  const agentCards = fixedOrder.map(buildAgentCard).join('');
+
+  // Row 2: 총 비용 + Usage providers (항상 같은 위치)
+  let summaryCards = '';
+
+  // 총 비용 카드
+  const t = cost?.totals;
+  summaryCards += `<div class="api-card" data-api="cost" style="--c:var(--yellow);">
+    <div class="emoji">💰</div>
+    <div class="name">총 비용 (${cost?.days || 30}일)</div>
+    <div class="model">전체 에이전트</div>
+    <div class="card-body">
+      <div class="api-row"><span class="l">총 토큰</span><span class="v" data-cost-tokens>${t ? fmtTokens(t.totalTokens) : '0'}</span></div>
+      <div class="api-row"><span class="l">입력</span><span class="v" data-cost-in>${t ? fmtTokens(t.input) : '0'}</span></div>
+      <div class="api-row"><span class="l">출력</span><span class="v" data-cost-out>${t ? fmtTokens(t.output) : '0'}</span></div>
+      <div class="api-row"><span class="l">캐시 읽기</span><span class="v" data-cost-cache>${t ? fmtTokens(t.cacheRead) : '0'}</span></div>
+      <div class="api-row"><span class="l">총 비용</span><span class="v" data-cost-total style="color:var(--yellow);">$${t ? t.totalCost.toFixed(4) : '0.0000'}</span></div>
+    </div>
+  </div>`;
+
+  // Usage provider 카드들
+  if (usage?.providers?.length) {
+    usage.providers.forEach(p => {
+      summaryCards += `<div class="api-card" style="--c:var(--accent);">
+        <div class="emoji">⚡</div>
+        <div class="name">${p.displayName}</div>
+        <div class="model">${p.plan || '-'}</div>
+        <div class="card-body">
+          ${p.windows.map(w => {
+            const pct = w.usedPercent || 0;
+            const cls = pct >= 90 ? 'crit' : pct >= 70 ? 'high' : pct >= 40 ? 'mid' : 'low';
+            const resetDate = new Date(w.resetAt);
+            const resetStr = resetDate.toLocaleDateString('ko-KR',{month:'short',day:'numeric'}) + ' ' + resetDate.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+            return `
+              <div class="api-row"><span class="l">${w.label} 사용률</span><span class="v">${pct}%</span></div>
+              <div class="ubar"><div class="ufill ${cls}" style="width:${pct}%;"></div></div>
+              <div style="font-size:10px;color:var(--text-3);text-align:right;margin-bottom:4px;">리셋: ${resetStr}</div>
+            `;
+          }).join('')}
+          ${(p.windows.some(w => (w.usedPercent || 0) >= 80)) ? `<div class="api-alert" style="background:var(--red-dim);color:var(--red);">⚠️ 과부하 주의!</div>` : ''}
+        </div>
+      </div>`;
+    });
+  }
+
+  grid.innerHTML = agentCards + summaryCards;
+}
+
+// ===== PATCH (no-flicker update) =====
+function patchOrg() {
+  const sessionMap = buildSessionMap();
+  const allIds = ['pm','backend','frontend','devops','qa','reviewer'];
+  allIds.forEach(id => {
+    const ind = document.querySelector(`[data-org-ind="${id}"]`);
+    if (ind) {
+      const on = !!sessionMap[id];
+      ind.style.background = on ? 'var(--green)' : 'var(--text-3)';
+      ind.style.boxShadow = on ? '0 0 6px var(--green)' : 'none';
+    }
+  });
+}
+
+function patchAgentList() {
+  const sessionMap = buildSessionMap();
+  const fixedOrder = ['main','secretary','backend','frontend','devops','qa','reviewer','debugger','designer'];
+  fixedOrder.forEach(id => {
+    const m = getMeta(id);
+    const sess = sessionMap[id];
+    const hasSession = !!sess;
+
+    const dot = document.querySelector(`[data-agent-dot="${id}"]`);
+    if (dot) {
+      dot.style.background = hasSession ? 'var(--green)' : 'var(--text-3)';
+      dot.style.boxShadow = hasSession ? '0 0 5px var(--green)' : 'none';
+    }
+
+    const taskEl = document.querySelector(`[data-agent-task="${id}"]`);
+    if (taskEl) {
+      const tm = taskMap[id];
+      if (tm && tm.task) {
+        taskEl.textContent = (hasSession ? '📋 ' : '💤 ') + tm.task;
+      } else {
+        taskEl.textContent = (hasSession ? '📋 ' : '💤 ') + (sess ? (sess.displayName || '세션 활성') : '대기 중');
+      }
+    }
+
+    const detailEl = document.querySelector(`[data-agent-detail="${id}"]`);
+    if (detailEl) {
+      const tm = taskMap[id];
+      if (tm && tm.lastMsg) {
+        detailEl.innerHTML = `<span class="label">↳ 응답:</span>${tm.lastMsg}`;
+      } else {
+        detailEl.innerHTML = '';
+      }
+    }
+
+    const tokenEl = document.querySelector(`[data-agent-token="${id}"]`);
+    if (tokenEl) {
+      if (sess) {
+        const pct = sess.percentUsed || 0;
+        const total = sess.totalTokens || 0;
+        tokenEl.textContent = `${fmtTokens(total)} tokens · ${pct}% 컨텍스트`;
+      } else {
+        tokenEl.textContent = '';
+      }
+    }
+
+    const tagEl = document.querySelector(`[data-agent-tag="${id}"]`);
+    if (tagEl) {
+      tagEl.textContent = hasSession ? '세션 활성' : '세션 없음';
+      tagEl.className = 'tag ' + (hasSession ? 'on' : 'no-session');
+    }
+
+    const pbarEl = document.querySelector(`[data-agent-pbar="${id}"]`);
+    if (pbarEl) {
+      if (sess) {
+        const pct = sess.percentUsed || 0;
+        pbarEl.innerHTML = `<div class="pbar"><div class="pfill" style="width:${pct}%;background:${pct > 70 ? 'var(--red)' : pct > 40 ? 'var(--yellow)' : 'var(--green)'};"></div></div>`;
+      } else {
+        pbarEl.innerHTML = '';
+      }
+    }
+  });
+}
+
+function patchApiSection() {
+  const byAgent = gwData.status?.sessions?.byAgent || [];
+  const cost = gwData.cost;
+  const usage = gwData.usage;
+  const fixedOrder = ['main','secretary','backend','frontend','devops','qa','reviewer','debugger','designer'];
+
+  fixedOrder.forEach(id => {
+    const agentSessions = byAgent.find(a => a.agentId === id);
+    const recent = agentSessions?.recent || [];
+    const totalTokens = recent.reduce((s, r) => s + (r.totalTokens || 0), 0);
+    const inputTokens = recent.reduce((s, r) => s + (r.inputTokens || 0), 0);
+    const outputTokens = recent.reduce((s, r) => s + (r.outputTokens || 0), 0);
+    const contextTokens = recent[0]?.contextTokens || 0;
+    const pct = contextTokens > 0 ? (totalTokens / contextTokens * 100) : 0;
+    const cls = pct >= 90 ? 'crit' : pct >= 70 ? 'high' : pct >= 40 ? 'mid' : 'low';
+
+    const bar = document.querySelector(`[data-api-bar="${id}"]`);
+    if (bar) { bar.style.width = Math.min(pct, 100) + '%'; bar.className = 'ufill ' + cls; }
+    const pctEl = document.querySelector(`[data-api-pct="${id}"]`);
+    if (pctEl) { pctEl.textContent = pct.toFixed(1) + '% 컨텍스트'; pctEl.style.color = pct >= 70 ? 'var(--orange)' : 'var(--text-2)'; }
+    const sessEl = document.querySelector(`[data-api-sess="${id}"]`);
+    if (sessEl) sessEl.textContent = recent.length;
+    const inEl = document.querySelector(`[data-api-in="${id}"]`);
+    if (inEl) inEl.textContent = fmtTokens(inputTokens);
+    const outEl = document.querySelector(`[data-api-out="${id}"]`);
+    if (outEl) outEl.textContent = fmtTokens(outputTokens);
+    const totalEl = document.querySelector(`[data-api-total="${id}"]`);
+    if (totalEl) totalEl.textContent = fmtTokens(totalTokens);
+  });
+
+  // Cost card
+  const t = cost?.totals;
+  const ct = document.querySelector('[data-cost-tokens]');
+  if (ct) ct.textContent = t ? fmtTokens(t.totalTokens) : '0';
+  const ci = document.querySelector('[data-cost-in]');
+  if (ci) ci.textContent = t ? fmtTokens(t.input) : '0';
+  const co = document.querySelector('[data-cost-out]');
+  if (co) co.textContent = t ? fmtTokens(t.output) : '0';
+  const cc = document.querySelector('[data-cost-cache]');
+  if (cc) cc.textContent = t ? fmtTokens(t.cacheRead) : '0';
+  const ctotal = document.querySelector('[data-cost-total]');
+  if (ctotal) ctotal.textContent = '$' + (t ? t.totalCost.toFixed(4) : '0.0000');
+}
+
+function renderChatTabs() {
+  const tabs = document.getElementById('chatTabs');
+  const fixedOrder = ['main','secretary','backend','frontend','devops','qa','reviewer','debugger','designer'];
+  const hbIds = new Set((gwData.status?.heartbeat?.agents || []).map(a => a.agentId));
+  const agentIds = fixedOrder.filter(id => hbIds.has(id));
+
+  const allActive = activeChatAgent === '_all';
+  let html = `<div class="chat-tab ${allActive ? 'active' : ''}" data-chat-tab="_all">
+    <span class="tab-dot" style="background:var(--accent);"></span>🌐 전체
+  </div>`;
+  html += agentIds.map(id => {
+    const m = getMeta(id);
+    const hasMsgs = chatHistory[id]?.length > 0;
+    const isActive = activeChatAgent === id;
+    return `<div class="chat-tab ${isActive ? 'active' : ''}" data-chat-tab="${id}">
+      <span class="tab-dot" style="background:${hasMsgs ? m.color : 'var(--text-3)'};"></span>${m.emoji} ${m.name}
+    </div>`;
+  }).join('');
+  tabs.innerHTML = html;
+}
+
+// 이벤트 위임으로 탭 클릭 처리 (debugger 예약어 충돌 방지)
+document.addEventListener('click', function(e) {
+  var tab = e.target.closest('[data-chat-tab]');
+  if (!tab) return;
+  e.preventDefault();
+  e.stopPropagation();
+  var agentId = tab.getAttribute('data-chat-tab');
+  if (!agentId) return;
+  activeChatAgent = agentId;
+  // 모든 탭의 active 클래스 즉시 토글
+  document.querySelectorAll('.chat-tab').forEach(function(t) {
+    t.classList.toggle('active', t.getAttribute('data-chat-tab') === agentId);
+  });
+  if (agentId === '_all') {
+    renderAllChat();
+  } else {
+    renderChatMessages(agentId);
+  }
+}, true);
+
+function isScrolledToBottom(el) {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+}
+
+function renderChatMessages(agentId) {
+  const container = document.getElementById('chatMsgs');
+  const wasAtBottom = isScrolledToBottom(container);
+  const msgs = chatHistory[agentId];
+  const m = getMeta(agentId);
+
+  if (!msgs || msgs.length === 0) {
+    container.innerHTML = `<div class="chat-empty">📭 ${m.name}의 대화 기록이 없습니다</div>`;
+    return;
+  }
+
+  container.innerHTML = msgs.filter(msg => msg.role === 'user' || msg.role === 'assistant').map(msg => {
+    const isUser = msg.role === 'user';
+    const isSpawn = !isUser && msg.content.includes('sessions_spawn');
+    const roleLabel = isUser ? '👤 지시' : `${m.emoji} ${m.name}`;
+    const roleColor = isUser ? 'var(--accent)' : m.color;
+    const text = msg.content.length > 800 ? msg.content.slice(0, 800) + '…' : msg.content;
+    const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' }) : '';
+    const msgClass = isSpawn ? 'spawn' : msg.role;
+    return `<div class="chat-msg ${msgClass}">
+      <div class="cm-ava">${isUser ? '👤' : m.emoji}</div>
+      <div class="cm-body">
+        <div class="cm-head">
+          <div class="cm-role" style="color:${roleColor};">${roleLabel}</div>
+          <div class="cm-agent-tag" style="background:${m.color}20;color:${m.color};">${m.role.split('/')[0].trim()}</div>
+          ${isSpawn ? '<span class="chat-arrow">→ 위임</span>' : ''}
+        </div>
+        <div class="cm-text">${escapeHtml(text)}</div>
+      </div>
+      ${time ? `<div class="cm-time">${time}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  if (wasAtBottom) container.scrollTop = container.scrollHeight;
+}
+
+function renderAllChat() {
+  const container = document.getElementById('chatMsgs');
+  const wasAtBottom = isScrolledToBottom(container);
+
+  // 모든 에이전트 대화를 합치고 타임스탬프 또는 순서로 정렬
+  const allMsgs = [];
+  const fixedOrder = ['main','secretary','backend','frontend','devops','qa','reviewer','debugger','designer'];
+
+  fixedOrder.forEach(agentId => {
+    const msgs = chatHistory[agentId];
+    if (!msgs || msgs.length === 0) return;
+    msgs.filter(msg => msg.role === 'user' || msg.role === 'assistant').forEach((msg, idx) => {
+      allMsgs.push({
+        ...msg,
+        agentId,
+        sortKey: msg.timestamp ? new Date(msg.timestamp).getTime() : (fixedOrder.indexOf(agentId) * 10000 + idx)
+      });
+    });
+  });
+
+  if (allMsgs.length === 0) {
+    container.innerHTML = '<div class="chat-empty">📭 아직 대화 기록이 없습니다</div>';
+    return;
+  }
+
+  allMsgs.sort((a, b) => a.sortKey - b.sortKey);
+
+  let lastAgent = null;
+  let html = '';
+
+  allMsgs.forEach(msg => {
+    const m = getMeta(msg.agentId);
+    const isUser = msg.role === 'user';
+    const isSpawn = !isUser && msg.content.includes('sessions_spawn');
+
+    // 에이전트가 바뀌면 구분선
+    if (msg.agentId !== lastAgent) {
+      html += `<div class="chat-divider">${m.emoji} ${m.name} 대화</div>`;
+      lastAgent = msg.agentId;
+    }
+
+    const roleLabel = isUser ? `👤 → ${m.emoji} ${m.name}` : `${m.emoji} ${m.name}`;
+    const roleColor = isUser ? 'var(--accent)' : m.color;
+    const text = msg.content.length > 600 ? msg.content.slice(0, 600) + '…' : msg.content;
+    const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' }) : '';
+    const msgClass = isSpawn ? 'spawn' : msg.role;
+
+    // spawn 감지: 어떤 에이전트에게 위임했는지 파싱
+    let spawnInfo = '';
+    if (isSpawn) {
+      const agentMatch = msg.content.match(/agentId[:\s]*["']?(\w+)["']?/);
+      if (agentMatch) {
+        const targetM = getMeta(agentMatch[1]);
+        spawnInfo = `<span class="chat-arrow">→ ${targetM.emoji} ${targetM.name}에게 위임</span>`;
+      } else {
+        spawnInfo = '<span class="chat-arrow">→ 위임</span>';
+      }
+    }
+
+    html += `<div class="chat-msg ${msgClass}">
+      <div class="cm-ava">${isUser ? '👤' : m.emoji}</div>
+      <div class="cm-body">
+        <div class="cm-head">
+          <div class="cm-role" style="color:${roleColor};">${roleLabel}</div>
+          <div class="cm-agent-tag" style="background:${m.color}20;color:${m.color};">${m.role.split('/')[0].trim()}</div>
+          ${spawnInfo}
+        </div>
+        <div class="cm-text">${escapeHtml(text)}</div>
+      </div>
+      ${time ? `<div class="cm-time">${time}</div>` : ''}
+    </div>`;
+  });
+
+  container.innerHTML = html;
+  if (wasAtBottom) container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderChart() {
+  const canvas = document.getElementById('chartCanvas');
+  const ctx = canvas.getContext('2d');
+  const daily = gwData.cost?.daily || [];
+  if (daily.length === 0) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  const pL = 50, pR = 10, pT = 10, pB = 5;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const maxTokens = Math.max(1, ...daily.map(d => d.totalTokens));
+  const maxCost = Math.max(0.001, ...daily.map(d => d.totalCost));
+
+  // Grid
+  ctx.strokeStyle = 'rgba(42,51,69,.5)';
+  ctx.lineWidth = 1;
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillStyle = '#5a6478';
+  for (let i = 0; i <= 4; i++) {
+    const y = pT + (H - pT - pB) * (1 - i / 4);
+    ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(W - pR, y); ctx.stroke();
+    ctx.fillText(fmtTokens(Math.round(maxTokens * i / 4)), 2, y + 3);
+  }
+
+  // Bars for tokens
+  const barW = Math.max(4, (W - pL - pR) / daily.length - 2);
+  daily.forEach((d, i) => {
+    const x = pL + (W - pL - pR) * (i / daily.length);
+    const h = (d.totalTokens / maxTokens) * (H - pT - pB);
+    ctx.fillStyle = 'rgba(108,140,255,.4)';
+    ctx.fillRect(x, H - pB - h, barW, h);
+    // Cost line dot
+    const costY = pT + (H - pT - pB) * (1 - d.totalCost / maxCost);
+    ctx.beginPath();
+    ctx.arc(x + barW / 2, costY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#f5c542';
+    ctx.fill();
+  });
+
+  // Cost line
+  ctx.beginPath();
+  ctx.strokeStyle = '#f5c542';
+  ctx.lineWidth = 2;
+  daily.forEach((d, i) => {
+    const x = pL + (W - pL - pR) * (i / daily.length) + barW / 2;
+    const y = pT + (H - pT - pB) * (1 - d.totalCost / maxCost);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // X axis
+  const xEl = document.getElementById('chartX');
+  const step = Math.max(1, Math.floor(daily.length / 8));
+  xEl.innerHTML = daily.filter((_, i) => i % step === 0).map(d => `<span>${d.date.slice(5)}</span>`).join('');
+}
+
+// ===== MODAL =====
+function openModal(id) {
+  const m = getMeta(id);
+  const byAgent = gwData.status?.sessions?.byAgent || [];
+  const agentSessions = byAgent.find(a => a.agentId === id);
+  const recent = agentSessions?.recent || [];
+  const totalTokens = recent.reduce((s, r) => s + (r.totalTokens || 0), 0);
+  const inputTokens = recent.reduce((s, r) => s + (r.inputTokens || 0), 0);
+  const outputTokens = recent.reduce((s, r) => s + (r.outputTokens || 0), 0);
+  const pctUsed = recent[0]?.percentUsed || 0;
+  const model = recent[0]?.model || m.modelId;
+  const hbAgent = (gwData.status?.heartbeat?.agents || []).find(a => a.agentId === id);
+
+  document.getElementById('modalEl').innerHTML = `
+    <div class="m-top">
+      <div class="m-ava" style="border-color:${m.color}40;">${m.emoji}</div>
+      <div class="m-info">
+        <div class="m-name">${m.name} <span class="tag ${recent.length ? 'on' : 'off'}" style="font-size:11px;">${recent.length ? '세션 활성' : '세션 없음'}</span></div>
+        <div class="m-role">${m.role}</div>
+        <div class="m-model"><span style="color:${m.color};">●</span> ${m.model} <span style="margin-left:8px;">🏠 ${m.origin}</span></div>
+      </div>
+      <button class="m-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="m-body">
+      ${taskMap[id]?.task ? `<div class="m-sec">
+        <div class="m-sec-t">📋 현재 작업</div>
+        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;">
+          <div style="font-size:13px;font-weight:600;color:var(--text-0);margin-bottom:6px;">${taskMap[id].task}</div>
+          ${taskMap[id].lastMsg ? `<div style="font-size:12px;color:var(--text-2);line-height:1.4;">↳ ${taskMap[id].lastMsg}</div>` : ''}
+          <div style="font-size:10px;color:var(--text-3);margin-top:6px;">상태: ${taskMap[id].status === 'responded' ? '✅ 응답 완료' : '⏳ 대기 중'}</div>
+        </div>
+      </div>` : ''}
+      <div class="m-sec">
+        <div class="m-sec-t">⚙️ 하트비트</div>
+        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;">
+          ${hbAgent?.enabled
+            ? `활성 · 주기: ${hbAgent.every}`
+            : `<span style="color:var(--text-3);">비활성 (하트비트 꺼짐)</span>`}
+        </div>
+      </div>
+      <div class="m-sec">
+        <div class="m-sec-t">💬 세션 정보</div>
+        ${recent.length > 0
+          ? recent.map(s => `
+            <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${s.displayName || s.key}</div>
+              <div style="font-size:11px;color:var(--text-2);">모델: ${s.model || model} · 컨텍스트: ${fmtTokens(s.contextTokens || 0)}</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                <div style="flex:1;height:6px;background:var(--bg-0);border-radius:3px;overflow:hidden;">
+                  <div style="height:100%;width:${s.percentUsed || 0}%;background:${(s.percentUsed||0) > 70 ? 'var(--red)' : 'var(--green)'};border-radius:3px;"></div>
+                </div>
+                <span style="font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;">${s.percentUsed || 0}%</span>
+              </div>
+            </div>
+          `).join('')
+          : '<div style="color:var(--text-3);font-size:13px;">활성 세션 없음</div>'}
+      </div>
+      <div class="m-sec">
+        <div class="m-sec-t">🔑 도구 권한</div>
+        <div class="chip-grid">
+          ${ALL_TOOLS.map(t => {
+            const denied = m.deny.includes(t);
+            return `<div class="chip ${denied ? 'no' : 'ok'}">${denied ? '✗' : '✓'} ${t}</div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="m-sec">
+        <div class="m-sec-t">📊 토큰 사용량</div>
+        <div class="mini-grid">
+          <div class="mini"><div class="l">입력 토큰</div><div class="v">${fmtTokens(inputTokens)}</div></div>
+          <div class="mini"><div class="l">출력 토큰</div><div class="v">${fmtTokens(outputTokens)}</div></div>
+          <div class="mini"><div class="l">총 토큰</div><div class="v">${fmtTokens(totalTokens)}</div></div>
+          <div class="mini"><div class="l">컨텍스트 사용률</div><div class="v" style="color:${pctUsed > 70 ? 'var(--red)' : 'var(--green)'};">${pctUsed}%</div></div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('show');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalBg')) return;
+  document.getElementById('modalBg').classList.remove('show');
+}
+
+// ===== HELPERS =====
+function getMeta(id) { return META[id] || { name: id, emoji: '❓', role: id, model: 'unknown', modelId: '', color: '#666', origin: '-', deny: [] }; }
+function setConn(state) {
+  const dot = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+  dot.className = 'dot ' + state;
+  label.textContent = { on: `Gateway :${GW_PORT}`, off: '연결 끊김', connecting: '연결 중...' }[state];
+}
+function fmtTokens(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+function buildSessionMap() {
+  const byAgent = gwData.status?.sessions?.byAgent || [];
+  const map = {};
+  byAgent.forEach(a => { if (a.recent?.length) map[a.agentId] = a.recent[0]; });
+  return map;
+}
+
+// Gateway restart via conn badge
+let gwRestarting = false;
+function onConnBadgeClick() {
+  if (connected) return; // already connected, no action needed
+  if (gwRestarting) return; // already restarting
+  gwRestarting = true;
+  const badge = document.getElementById('connBadge');
+  const label = document.getElementById('connLabel');
+  badge.classList.add('restarting');
+  label.textContent = 'Gateway 시작 중...';
+  fetch('/api/gateway/restart', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        label.textContent = '재시작 완료, 연결 중...';
+        // Give gateway a moment to start, then reconnect
+        setTimeout(function() {
+          gwRestarting = false;
+          badge.classList.remove('restarting');
+          connect();
+        }, 3000);
+      } else {
+        label.textContent = '시작 실패: ' + (data.stderr || data.error || 'unknown');
+        gwRestarting = false;
+        badge.classList.remove('restarting');
+      }
+    })
+    .catch(function(err) {
+      label.textContent = '서버 연결 실패';
+      gwRestarting = false;
+      badge.classList.remove('restarting');
+    });
+}
+
+// Clock
+function tick() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false });
+}
+setInterval(tick, 1000); tick();
+
+// Periodic refresh (전체 데이터 15초, 채팅 히스토리 10초)
+setInterval(() => { if (connected) fetchAll(); }, 15000);
+setInterval(() => { if (connected && rendered) fetchTasks(); }, 10000);
+
+// Keyboard
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Resize
+window.addEventListener('resize', () => { if (gwData.cost) renderChart(); });
+
+// Start
+connect();
+</script>
+</body>
+</html>

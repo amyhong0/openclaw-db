@@ -1,0 +1,15 @@
+{
+  "name": "openclaw-db",
+  "version": "1.0.0",
+  "description": "AMY Dashboard - OpenClaw gateway 모니터링 UI",
+  "main": "proxy-server.js",
+  "scripts": {
+    "start": "node proxy-server.js",
+    "dashboard": "node proxy-server.js"
+  },
+  "keywords": ["openclaw", "dashboard", "gateway"],
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
