@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * OpenClaw gateway 상태 수집 → status.json 생성 → GCS 업로드
- * 로컬에서 cron으로 주기 실행 (예: 2분마다)
+ * 로컬에서 cron으로 주기 실행 (예: 1분마다)
  *
  * 사용법:
  *   node collect-to-gcs.mjs
@@ -11,7 +11,7 @@
 
 import WebSocket from 'ws';
 import { spawn } from 'child_process';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -24,6 +24,85 @@ const GCS_BUCKET = process.env.GCS_BUCKET ||
   (process.argv.find(a => a.startsWith('--upload='))?.replace('--upload=', '')) ||
   (idx >= 0 && process.argv[idx + 1] ? process.argv[idx + 1] : null);
 const OUTPUT = join(__dirname, 'status.json');
+
+// 게이트웨이 로그에서 프로바이더별 rate limit / cooldown 이벤트 파싱
+function parseRateLimitEvents() {
+  const logDir = '/tmp/openclaw';
+  const now = Date.now();
+  const events = {};
+
+  // 오늘·어제 로그 파일 모두 확인 (날짜 경계 대비)
+  const dates = [
+    new Date(now).toISOString().split('T')[0],
+    new Date(now - 86400000).toISOString().split('T')[0],
+  ];
+
+  // 탐지 패턴 (대소문자 무시)
+  const PATTERNS = {
+    anthropic: [
+      'provider anthropic is in cooldown',
+      'anthropic/claude',
+    ],
+    google: [
+      'no available auth profile for google',
+      'provider google',
+      'google/gemini',
+    ],
+  };
+
+  // Anthropic 5h rolling, Google 1h 기준으로 리셋 추정
+  const RESET_MS = { anthropic: 5 * 3600 * 1000, google: 60 * 60 * 1000 };
+
+  for (const dateStr of dates) {
+    const logFile = `${logDir}/openclaw-${dateStr}.log`;
+    if (!existsSync(logFile)) continue;
+    let content = '';
+    try { content = readFileSync(logFile, 'utf8'); } catch (_) { continue; }
+
+    for (const line of content.split('\n')) {
+      if (!line) continue;
+      const lower = line.toLowerCase();
+      // 관심 키워드가 없는 줄은 건너뜀
+      if (!lower.includes('cooldown') && !lower.includes('rate_limit') &&
+          !lower.includes('rate limit') && !lower.includes('overload') &&
+          !lower.includes('anthropic') && !lower.includes('google/gemini')) continue;
+
+      let ts = null;
+      let text = lower;
+      try {
+        const entry = JSON.parse(line);
+        const rawTime = entry.time || entry._meta?.date;
+        if (rawTime) ts = new Date(rawTime).getTime();
+        text = [entry['0'], entry['1']].filter(Boolean).join(' ').toLowerCase();
+      } catch (_) {
+        // JSON 파싱 실패 시 타임스탬프 추출 시도
+        const m = line.match(/"time":"([^"]+)"/);
+        if (m) ts = new Date(m[1]).getTime();
+      }
+      if (!ts) continue;
+
+      for (const [provider, patterns] of Object.entries(PATTERNS)) {
+        const matched = patterns.some(p => text.includes(p));
+        // generic rate_limit ("API rate limit reached") → anthropic로 귀속
+        const isGenericRL = provider === 'anthropic' &&
+          (text.includes('api rate limit reached') || text.includes('failovererror'));
+
+        if (matched || isGenericRL) {
+          if (!events[provider] || events[provider].lastAt < ts) {
+            const estimatedResetAt = ts + RESET_MS[provider];
+            events[provider] = {
+              lastAt: ts,
+              estimatedResetAt,
+              inCooldown: estimatedResetAt > now,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return events;
+}
 
 function getTokenFromConfig() {
   try {
@@ -94,39 +173,59 @@ async function connectAndCollect() {
             const taskMap = {};
             const chatHistory = {};
             const byAgent = status?.sessions?.byAgent || [];
+            const sessList = sessions?.sessions || [];
+            const ext = (m) => {
+      if (!m?.content) return '';
+      const c = m.content;
+      if (typeof c === 'string') return c;
+      if (Array.isArray(c)) {
+        return c.map(x => {
+          if (x.type === 'text') return x.text || '';
+          if (x.type === 'tool_result' || x.type === 'tool_output') return x.output || x.content || x.text || '';
+          return '';
+        }).filter(Boolean).join('\n');
+      }
+      return (c.output || c.text || '');
+    };
 
-            for (const a of byAgent.filter(x => x.recent?.length > 0).slice(0, 5)) {
-              const agentId = a.agentId;
-              for (const sess of a.recent.slice(0, 2)) {
-                try {
-                  const hist = await rpc(ws, 'chat.history', { sessionKey: sess.key, limit: 30 });
-                  if (!hist?.messages?.length) continue;
-                  const msgs = hist.messages;
-                  const firstUser = msgs.find(m => m.role === 'user');
-                  const lastAsst = [...msgs].reverse().find(m => m.role === 'assistant');
-                  const ext = (m) => Array.isArray(m?.content) ? (m.content.find(c => c.type === 'text')?.text || '') : (m?.content || '');
-                  if (!taskMap[agentId]) {
-                    taskMap[agentId] = {
-                      task: (ext(firstUser) || '').slice(0, 100),
-                      lastMsg: (ext(lastAsst) || '').slice(0, 150),
-                      status: msgs[msgs.length - 1]?.role === 'assistant' ? 'responded' : 'waiting',
-                      sessionKey: sess.key
-                    };
-                  }
-                  if (!chatHistory[agentId]) chatHistory[agentId] = [];
-                  chatHistory[agentId].push(...msgs.map(m => ({
-                    role: m.role,
-                    content: ext(m),
-                    timestamp: m.timestamp
-                  })).filter(m => m.content));
-                } catch (_) {}
-              }
+            const allSessionKeys = new Set();
+            byAgent.forEach(a => (a.recent || []).forEach(s => allSessionKeys.add(s.key)));
+            sessList.forEach(s => s?.key && allSessionKeys.add(s.key));
+
+            for (const sessionKey of allSessionKeys) {
+              const agentId = sessionKey.split(':')[1] || 'main';
+              try {
+                const hist = await rpc(ws, 'chat.history', { sessionKey, limit: 150 });
+                if (!hist?.messages?.length) continue;
+                const msgs = hist.messages;
+                const firstUser = msgs.find(m => m.role === 'user');
+                const lastAsst = [...msgs].reverse().find(m => m.role === 'assistant');
+                if (!taskMap[agentId]) {
+                  taskMap[agentId] = {
+                    task: (ext(firstUser) || '').slice(0, 100),
+                    lastMsg: (ext(lastAsst) || '').slice(0, 150),
+                    status: msgs[msgs.length - 1]?.role === 'assistant' ? 'responded' : 'waiting',
+                    sessionKey
+                  };
+                }
+                if (!chatHistory[agentId]) chatHistory[agentId] = [];
+                chatHistory[agentId].push(...msgs.map(m => ({
+                  role: m.role,
+                  content: ext(m),
+                  timestamp: m.timestamp
+                })).filter(m => m.content));
+              } catch (_) {}
             }
 
+            for (const id of Object.keys(chatHistory)) {
+              chatHistory[id].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            }
+
+            const rateLimitEvents = parseRateLimitEvents();
             const payload = {
               updatedAt: new Date().toISOString(),
               health, status, presence, usage, cost, sessions,
-              taskMap, chatHistory
+              taskMap, chatHistory, rateLimitEvents
             };
             writeFileSync(OUTPUT, JSON.stringify(payload, null, 0), 'utf8');
             resolve(payload);

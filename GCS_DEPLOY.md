@@ -7,7 +7,7 @@ OpenClaw 대시보드를 GCS 정적 호스팅으로 배포하고, JSON 수집 �
 ```
 [로컬 PC] OpenClaw gateway (18789)
     ↑
-    | collect-to-gcs.mjs (2분마다 cron)
+    | collect-to-gcs.mjs (1분마다 cron)
     ↓
 [GCS] status.json + amy-dashboard.html
     ↑
@@ -55,8 +55,8 @@ npm install
 # 수동 1회 실행
 GCS_BUCKET=gs://${BUCKET_NAME} node collect-to-gcs.mjs
 
-# cron 등록 (2분마다) - crontab -e
-# */2 * * * * cd /path/to/openclaw-db && GCS_BUCKET=gs://BUCKET_NAME node collect-to-gcs.mjs >> /tmp/collect.log 2>&1
+# cron 등록 (1분마다) - crontab -e
+# */1 * * * * cd /path/to/openclaw-db && GCS_BUCKET=gs://BUCKET_NAME node collect-to-gcs.mjs >> /tmp/collect.log 2>&1
 ```
 
 **필수**: `gcloud auth login` 및 `gsutil` 사용 가능해야 합니다.
